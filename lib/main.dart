@@ -8,20 +8,12 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Joke Generator',
+      title: 'Retro Joke Gen',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-      ),
-      // This launches your joke screen as the first thing the user sees
+      theme: ThemeData(useMaterial3: true, brightness: Brightness.light),
       home: JokeScreen(),
     );
   }

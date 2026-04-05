@@ -6,7 +6,6 @@ class JokeService {
   static const String _url = 'https://icanhazdadjoke.com/';
 
   Future<DadJoke> fetchJoke() async {
-    //  API requires the 'Accept' header to return JSON
     final response = await http.get(
       Uri.parse(_url),
       headers: {'Accept': 'application/json'},
@@ -15,9 +14,7 @@ class JokeService {
     if (response.statusCode == 200) {
       return DadJoke.fromJson(jsonDecode(response.body));
     } else {
-      throw Exception(
-        'Failed to get a laugh today (Error ${response.statusCode})',
-      );
+      throw Exception('Failed to connect to the joke server.');
     }
   }
 }
