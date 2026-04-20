@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'joke_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Added BLoC import
+import 'joke_bloc.dart';
 import 'joke_model.dart';
 
 class JokeScreen extends StatefulWidget {
@@ -10,20 +11,8 @@ class JokeScreen extends StatefulWidget {
 }
 
 class _JokeScreenState extends State<JokeScreen> {
-  late Future<DadJoke> _jokeFuture;
+  // Favorites stay in the UI state as they are a local feature, not from the API
   final List<DadJoke> _favorites = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _jokeFuture = JokeService().fetchJoke();
-  }
-
-  void _getNewJoke() {
-    setState(() {
-      _jokeFuture = JokeService().fetchJoke();
-    });
-  }
 
   void _toggleFavorite(DadJoke joke) {
     setState(() {
@@ -37,7 +26,6 @@ class _JokeScreenState extends State<JokeScreen> {
     });
   }
 
-  // Retro Button: 90s Bevel + Modern Rounded Corners (4px)
   Widget _retroButton({
     required String label,
     required VoidCallback onPressed,
@@ -49,7 +37,7 @@ class _JokeScreenState extends State<JokeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(4), // Modern hint
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(color: Colors.white, width: 2),
         ),
         child: Text(
@@ -68,11 +56,11 @@ class _JokeScreenState extends State<JokeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF008080), // Classic Win95 Teal
+      backgroundColor: const Color(0xFF008080),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF000080), // Classic Win95 Navy
+        backgroundColor: const Color(0xFF000080),
         title: const Text(
-          'JOKE_GEN.EXE',
+          'JOKE GENERATOR',
           style: TextStyle(
             color: Colors.white,
             fontFamily: 'monospace',
@@ -83,27 +71,25 @@ class _JokeScreenState extends State<JokeScreen> {
       ),
       body: Column(
         children: [
-          // MAIN JOKE AREA
           Expanded(
             child: Center(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
                   color: const Color(0xFFC0C0C0),
-                  borderRadius: BorderRadius.circular(4), // Modern hint
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: Colors.black26, width: 1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.4),
                       offset: const Offset(6, 6),
-                      blurRadius: 0, // Sharp 90s shadow
+                      blurRadius: 0,
                     ),
                   ],
                 ),
-                child: FutureBuilder<DadJoke>(
-                  future: _jokeFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                child: BlocBuilder<JokeBloc, JokeState>(
+                  builder: (context, state) {
+                    if (state is JokeLoading) {
                       return const Padding(
                         padding: EdgeInsets.all(40.0),
                         child: CircularProgressIndicator(
@@ -112,14 +98,13 @@ class _JokeScreenState extends State<JokeScreen> {
                       );
                     }
 
-                    if (snapshot.hasData) {
-                      final joke = snapshot.data!;
+                    if (state is JokeLoaded) {
+                      final joke = state.joke;
                       bool isSaved = _favorites.any((j) => j.id == joke.id);
 
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Joke Text Box
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(25),
@@ -135,7 +120,6 @@ class _JokeScreenState extends State<JokeScreen> {
                               ),
                             ),
                           ),
-                          // Control Area
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 25),
                             child: Row(
@@ -143,7 +127,9 @@ class _JokeScreenState extends State<JokeScreen> {
                               children: [
                                 _retroButton(
                                   label: 'Next',
-                                  onPressed: _getNewJoke,
+                                  onPressed: () => context.read<JokeBloc>().add(
+                                    LoadJokeEvent(),
+                                  ),
                                 ),
                                 const SizedBox(width: 15),
                                 _retroButton(
@@ -159,17 +145,22 @@ class _JokeScreenState extends State<JokeScreen> {
                         ],
                       );
                     }
-                    return const Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Text("FATAL ERROR: JOKE NOT FOUND"),
-                    );
+
+                    if (state is JokeError) {
+                      return Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(state.message),
+                      );
+                    }
+
+                    return const SizedBox.shrink();
                   },
                 ),
               ),
             ),
           ),
 
-          // SAVED JOKES LOG (Favorites)
+          // Favorites Section
           Container(
             height: 250,
             width: double.infinity,
@@ -178,13 +169,6 @@ class _JokeScreenState extends State<JokeScreen> {
               border: const Border(
                 top: BorderSide(color: Colors.black26, width: 2),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5), // Modern soft upward shadow
-                ),
-              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,12 +181,11 @@ class _JokeScreenState extends State<JokeScreen> {
                   ),
                   color: const Color(0xFF000080),
                   child: const Text(
-                    "SAVED_JOKES.LOG",
+                    "SAVED JOKES",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'monospace',
-                      fontSize: 12,
                     ),
                   ),
                 ),
@@ -216,7 +199,7 @@ class _JokeScreenState extends State<JokeScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(4), // Modern hint
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: Colors.black26, width: 1),
                         ),
                         child: Text(
@@ -224,7 +207,6 @@ class _JokeScreenState extends State<JokeScreen> {
                           style: const TextStyle(
                             fontFamily: 'monospace',
                             fontSize: 13,
-                            height: 1.4,
                           ),
                         ),
                       );

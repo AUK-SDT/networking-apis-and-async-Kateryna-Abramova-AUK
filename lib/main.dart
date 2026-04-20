@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'joke_bloc.dart';
+import 'joke_service.dart';
 import 'joke_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    RepositoryProvider(
+      create: (context) => JokeService(),
+      child: BlocProvider(
+        create: (context) =>
+            JokeBloc(RepositoryProvider.of<JokeService>(context))
+              ..add(LoadJokeEvent()),
+        child: const MyApp(),
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,10 +23,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Retro Joke Gen',
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, brightness: Brightness.light),
       home: JokeScreen(),
     );
   }
